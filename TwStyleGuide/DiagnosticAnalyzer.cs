@@ -40,11 +40,17 @@ namespace TwStyleGuide
 																						  "Layout",
 																						  DiagnosticSeverity.Warning, // Squiggles only on Warning and Error, Info has none
 																						  isEnabledByDefault: true);  // DiagnosticSeverity.Error will not compile if existent
+		private static DiagnosticDescriptor Rule5 = new DiagnosticDescriptor("TW0005",
+																						  "Implicit declarations.",
+																						  "The variable \"{0}\" is declared explicit while being initialized.",
+																						  "Variables",
+																						  DiagnosticSeverity.Warning, // Squiggles only on Warning and Error, Info has none
+																						  isEnabledByDefault: true);  // DiagnosticSeverity.Error will not compile if existent
 
 		/// <summary>
 		/// The array publishes the Check-Rules
 		/// </summary>
-		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3, Rule4); } }
+		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3, Rule4, Rule5); } }
 
 		/// <summary>
 		/// In the Initialize Method one have to Register all Check-Functions
@@ -147,7 +153,7 @@ namespace TwStyleGuide
 			SyntaxNode root = context.Tree.GetCompilationUnitRoot(context.CancellationToken);
 			var commentNodes = from node in root.DescendantTrivia() where node.IsKind(SyntaxKind.SingleLineCommentTrivia) select node;  //  one could also select ''node.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia)''
 			foreach (var node in commentNodes)
-				if (!Regex.IsMatch(node.ToString(), @"/{2,}\s"))
+				if (!Regex.IsMatch(node.ToString(), @"/{2,}\w"))
 				{
 					var diagnostic = Diagnostic.Create(Rule3, node.GetLocation());
 					context.ReportDiagnostic(diagnostic);
@@ -183,11 +189,22 @@ namespace TwStyleGuide
 		{
 			var syntax = (LocalDeclarationStatementSyntax)context.Node;
 			if (context.SemanticModel.GetTypeInfo(syntax.Declaration.Type).ConvertedType.SpecialType == SpecialType.System_String)
-				foreach (var variable in syntax.Declaration.Variables) if (variable.Initializer?.Value.ToString() == "\"\"" || variable.Initializer?.Value.ToString() == "string.Empty")
+				foreach (var variable in syntax.Declaration.Variables)
+					if (variable.Initializer?.Value.ToString() == "\"\"" || variable.Initializer?.Value.ToString() == "string.Empty")
 					{
-						var diagnostic = Diagnostic.Create(Rule2, variable.GetLocation(), variable.Identifier.Text, variable.Initializer.Value.ToString()); // the regex is to cleanup for the WarningMessage
-						context.ReportDiagnostic(diagnostic);
-					} 
+						var diagnostic = Diagnostic.Create(Rule2, variable.GetLocation(), variable.Identifier.Text, variable.Initializer.Value.ToString());
+						var alreadyWrong = false;
+						foreach (var diag in variable.GetDiagnostics()) if (diag.Id == Rule2.Id) alreadyWrong = true;
+						if (!alreadyWrong) context.ReportDiagnostic(diagnostic);
+					}
+			foreach (var token in syntax.Declaration.DescendantTokens()) if (token.RawKind == 8204 && !syntax.Declaration.Type.IsVar)	//ToDo: rk
+			{
+				var diagnostic = Diagnostic.Create(Rule5, syntax.GetLocation(), syntax.Declaration.Variables[0].Identifier.Value);
+					var alreadyWrong = false;
+					SyntaxNode root = context.Node;
+					foreach (var diag in root.GetDiagnostics()) if (diag.Id == Rule5.Id) alreadyWrong = true;
+					if (!alreadyWrong) context.ReportDiagnostic(diagnostic);
+			}
 		}
 	}
 }
