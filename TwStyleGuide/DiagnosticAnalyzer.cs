@@ -81,13 +81,17 @@ namespace TwStyleGuide
 
 			// check if this is the outermost if for the reduction
 			if (upperIf.Parent.IsKind(SyntaxKind.ElseClause))
+			{
+				if (upperIf.Condition.GetType() != typeof(BinaryExpressionSyntax)) return;
 				if (((BinaryExpressionSyntax)((IfStatementSyntax)upperIf.Parent.Parent).Condition).Left.ToString() == ((BinaryExpressionSyntax)upperIf.Condition).Left.ToString()) return;
+			}
+				
 			
 			// there is nothing to find, if there is no enclosed if
 			if (!(upperIf.Else?.ChildNodes().Count() > 0 && upperIf.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement)))
 				return;
 
-			// ToDo: one could use ''if (var1 == 1) ... else if (2 == var1)'' 
+			// ToDo: one could use ''if (var1 == 1) ... else if (2 == var1)''
 			var upperLeft = ((BinaryExpressionSyntax)upperIf.Condition).Left;
 
 			var onlySwitching = true;

@@ -53,7 +53,7 @@ namespace TwStyleGuide
 			var diagnostic = context.Diagnostics.First();
 			var diagnosticSpan = diagnostic.Location.SourceSpan;
 			StatementSyntax statement = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<StatementSyntax>().First();
-			
+
 			if (statement != null) context.RegisterCodeFix(CodeAction.Create(title: "Place the statement on a new line.",
 																								  createChangedDocument: c => PlaceOnNewLine(context.Document, statement, c),
 																								  equivalenceKey: "Place the statement on a new line."),
@@ -71,7 +71,7 @@ namespace TwStyleGuide
 		{
 			SyntaxNode oldRoot;
 			document.TryGetSyntaxRoot(out oldRoot);
-			
+
 			dynamic dynamicStatement = statement;
 
 			// the Replace*-function ensures that only the changes use-up memory, while the unchanged content is ref'd in memory (that's at least the idea)
@@ -246,7 +246,7 @@ namespace TwStyleGuide
 		{
 			SyntaxNode oldRoot;
 			document.TryGetSyntaxRoot(out oldRoot);
-	
+
 			var declarationType = statement.Declaration.Type;
 			var varDeclarationType = SyntaxFactory.IdentifierName("var").WithAdditionalAnnotations(Formatter.Annotation);
 
@@ -317,22 +317,34 @@ namespace TwStyleGuide
 
 			while (upperIf.Else?.ChildNodes().Count() > 0 && upperIf.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement))
 			{
-				cases = cases.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(new List<SwitchLabelSyntax> { SyntaxFactory.CaseSwitchLabel(((BinaryExpressionSyntax)upperIf.Condition).Right) }),
+				if (upperIf.Statement.IsKind(SyntaxKind.ReturnStatement) || upperIf.Statement.ChildNodes().Last().IsKind(SyntaxKind.ReturnStatement))
+					cases = cases.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(new List<SwitchLabelSyntax> { SyntaxFactory.CaseSwitchLabel(((BinaryExpressionSyntax)upperIf.Condition).Right) }),
+											SyntaxFactory.List(new List<StatementSyntax> { upperIf.Statement })));
+				else
+					cases = cases.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(new List<SwitchLabelSyntax> { SyntaxFactory.CaseSwitchLabel(((BinaryExpressionSyntax)upperIf.Condition).Right) }),
 										SyntaxFactory.List(new List<StatementSyntax> { upperIf.Statement, SyntaxFactory.BreakStatement() })));
 
 				upperIf = (IfStatementSyntax)upperIf.Else.ChildNodes().First();
 			}
-			
+
 			// include the last if-statement
-			cases = cases.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(new List<SwitchLabelSyntax> { SyntaxFactory.CaseSwitchLabel(((BinaryExpressionSyntax)upperIf.Condition).Right) }),
-																	    SyntaxFactory.List(new List<StatementSyntax> { upperIf.Statement, SyntaxFactory.BreakStatement() })));
+			if (upperIf.Statement.IsKind(SyntaxKind.ReturnStatement) || upperIf.Statement.ChildNodes().Last().IsKind(SyntaxKind.ReturnStatement))
+				cases = cases.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(new List<SwitchLabelSyntax> { SyntaxFactory.CaseSwitchLabel(((BinaryExpressionSyntax)upperIf.Condition).Right) }),
+																		 SyntaxFactory.List(new List<StatementSyntax> { upperIf.Statement })));
+			else
+				cases = cases.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(new List<SwitchLabelSyntax> { SyntaxFactory.CaseSwitchLabel(((BinaryExpressionSyntax)upperIf.Condition).Right) }),
+																			 SyntaxFactory.List(new List<StatementSyntax> { upperIf.Statement, SyntaxFactory.BreakStatement() })));
 			// include a possible last else as the default
 			if (upperIf.Else != null)
-				cases = cases.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(new List<SwitchLabelSyntax> { SyntaxFactory.DefaultSwitchLabel() }),
+				if (upperIf.Else.Statement.IsKind(SyntaxKind.ReturnStatement) || upperIf.Else.Statement.ChildNodes().Last().IsKind(SyntaxKind.ReturnStatement))
+					cases = cases.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(new List<SwitchLabelSyntax> { SyntaxFactory.DefaultSwitchLabel() }),
+										SyntaxFactory.List(new List<StatementSyntax> { upperIf.Else.Statement })));
+				else
+					cases = cases.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(new List<SwitchLabelSyntax> { SyntaxFactory.DefaultSwitchLabel() }),
 										SyntaxFactory.List(new List<StatementSyntax> { upperIf.Else.Statement, SyntaxFactory.BreakStatement() })));
-			
-			SwitchStatementSyntax newSwitch = SyntaxFactory.SwitchStatement(((BinaryExpressionSyntax)statement.Condition).Left,cases);
-						
+
+			SwitchStatementSyntax newSwitch = SyntaxFactory.SwitchStatement(((BinaryExpressionSyntax)statement.Condition).Left, cases);
+
 			var newRoot = oldRoot.ReplaceNode(statement, newSwitch.WithAdditionalAnnotations(Formatter.Annotation));
 			var newDocument = document.WithSyntaxRoot(newRoot);
 			return Task.FromResult(newDocument);
