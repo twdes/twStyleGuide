@@ -244,18 +244,10 @@ namespace TwStyleGuide
 		{
 			SyntaxNode oldRoot;
 			document.TryGetSyntaxRoot(out oldRoot);
-
-			dynamic dynamicStatement = statement;
-			var test = statement;
-
-			// the Replace*-function ensures that only the changes use-up memory, while the unchanged content is ref'd in memory (that's at least the idea)
-			// .WithAdditionalAnnotations(Formatter.Annotation) formats the indentation according to the settings of the editor (tabs or [1..n]whitespaces) - neat
-			//var newRoot = oldRoot.ReplaceNode((SyntaxNode)dynamicStatement.Statement, ((StatementSyntax)dynamicStatement.Statement).WithLeadingTrivia(SyntaxFactory.LineFeed).WithAdditionalAnnotations(Formatter.Annotation));
-			//var newDocument = document.WithSyntaxRoot(newRoot);
-			//return Task.FromResult(newDocument);
-			
+	
 			var declarationType = statement.Declaration.Type;
 			var varDeclarationType = SyntaxFactory.IdentifierName("var").WithAdditionalAnnotations(Formatter.Annotation);
+
 			var newStatement = statement.ReplaceNode(declarationType, varDeclarationType);
 			var newRoot = oldRoot.ReplaceNode(statement, newStatement);
 			var newDocument = document.WithSyntaxRoot(newRoot);

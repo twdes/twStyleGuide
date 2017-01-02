@@ -46,11 +46,17 @@ namespace TwStyleGuide
 																						  "Variables",
 																						  DiagnosticSeverity.Warning, // Squiggles only on Warning and Error, Info has none
 																						  isEnabledByDefault: true);  // DiagnosticSeverity.Error will not compile if existent
+		private static DiagnosticDescriptor Rule6 = new DiagnosticDescriptor("TW0006",
+																						  "Switching with If.",
+																						  "These Ifs should be replaced by a switch() {}",
+																						  "Code",
+																						  DiagnosticSeverity.Warning, // Squiggles only on Warning and Error, Info has none
+																						  isEnabledByDefault: true);  // DiagnosticSeverity.Error will not compile if existent
 
 		/// <summary>
 		/// The array publishes the Check-Rules
 		/// </summary>
-		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3, Rule4, Rule5); } }
+		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3, Rule4, Rule5, Rule6); } }
 
 		/// <summary>
 		/// In the Initialize Method one have to Register all Check-Functions
@@ -66,6 +72,60 @@ namespace TwStyleGuide
 			context.RegisterSyntaxNodeAction(AnalyzePublicEnumComment, SyntaxKind.EnumDeclaration);
 			context.RegisterSyntaxNodeAction(AnalyzePublicStructComment, SyntaxKind.StructDeclaration);
 			context.RegisterSyntaxNodeAction(AnalyzePublicPropertyComment, SyntaxKind.PropertyDeclaration);
+			context.RegisterSyntaxNodeAction(AnalyzeEncapsulatingIfs, SyntaxKind.IfStatement);
+		}
+
+		private void AnalyzeEncapsulatingIfs(SyntaxNodeAnalysisContext context)
+		{
+			var upperIf = (IfStatementSyntax)context.Node;
+
+			// there is nothing to find, if there is no enclosed if
+			if (!(upperIf.Else.ChildNodes().Count() > 0 && upperIf.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement)))
+				return;
+
+			// ToDo: one could use ''if (var1 == 1) ... else if (2 == var1)'' 
+			var upperLeft = ((BinaryExpressionSyntax)upperIf.Condition).Left;
+
+			var onlySwitching = true;
+
+			while (upperIf.Else.ChildNodes().Count() > 0 && upperIf.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement))
+			{
+				var descendingIf = (IfStatementSyntax)upperIf.Else.ChildNodes().First();
+
+				upperLeft = ((BinaryExpressionSyntax)upperIf.Condition).Left;
+				if (descendingIf.Condition.IsKind(SyntaxKind.EqualsExpression))
+				{
+					var descendingLeft = ((BinaryExpressionSyntax)descendingIf.Condition).Left;
+
+					if (upperLeft.ToString() != descendingLeft.ToString()) onlySwitching = false;
+				}
+				upperIf = descendingIf;
+			}
+
+			if (onlySwitching)
+			{
+				var diagnostic = Diagnostic.Create(Rule6,
+				((IfStatementSyntax)context.Node).GetLocation());
+				context.ReportDiagnostic(diagnostic);
+			}
+
+
+			//if (if1.Else.ChildNodes().Count() > 0)
+			//	if (if1.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement))
+			//	{
+			//		var if2 = (IfStatementSyntax)if1.Else.ChildNodes().First();
+
+			//		var left1 = ((BinaryExpressionSyntax)if1.Condition).Left;
+			//		var left2 =((BinaryExpressionSyntax)if2.Condition).Left;
+
+			//		if (left1.ToString() == left2.ToString())
+			//		{
+
+			//			var diagnostic = Diagnostic.Create(Rule6,
+			//													  ((IfStatementSyntax)context.Node).GetLocation());
+			//			context.ReportDiagnostic(diagnostic);
+			//		}
+			//	}
 		}
 
 		private void AnalyzePublicPropertyComment(SyntaxNodeAnalysisContext context)
@@ -106,14 +166,14 @@ namespace TwStyleGuide
 			if (!((EnumDeclarationSyntax)context.Node).Modifiers.Any(SyntaxKind.PublicKeyword)) return;
 			var singleLineComments = from comment in context.Node.DescendantTrivia() where comment.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) select comment;
 			if (singleLineComments.Count() == 0)
-				{
+			{
 
-					var diagnostic = Diagnostic.Create(Rule4, 
-																  ((EnumDeclarationSyntax)context.Node).Identifier.GetLocation(), 
-																  ((EnumDeclarationSyntax)context.Node).Identifier.ToString(), 
-																  "enum");
-					context.ReportDiagnostic(diagnostic);
-				}
+				var diagnostic = Diagnostic.Create(Rule4,
+															  ((EnumDeclarationSyntax)context.Node).Identifier.GetLocation(),
+															  ((EnumDeclarationSyntax)context.Node).Identifier.ToString(),
+															  "enum");
+				context.ReportDiagnostic(diagnostic);
+			}
 		}
 
 		private void AnalyzePublicVarComment(SyntaxNodeAnalysisContext context)
@@ -124,25 +184,25 @@ namespace TwStyleGuide
 			if (singleLineComments.Count() == 0)
 				foreach (var variable in ((FieldDeclarationSyntax)context.Node).Declaration.Variables)
 				{
-				
-				var diagnostic = Diagnostic.Create(Rule4, 
-															  variable.Identifier.GetLocation(), 
-															  variable.Identifier.ToString(), 
-															  ((FieldDeclarationSyntax)context.Node).Declaration.Type.ToString());
-				context.ReportDiagnostic(diagnostic);
-			}
+
+					var diagnostic = Diagnostic.Create(Rule4,
+																  variable.Identifier.GetLocation(),
+																  variable.Identifier.ToString(),
+																  ((FieldDeclarationSyntax)context.Node).Declaration.Type.ToString());
+					context.ReportDiagnostic(diagnostic);
+				}
 		}
 
 		private void AnalyzePublicMethodComment(SyntaxNodeAnalysisContext context)
 		{
-			
+
 			if (!((MethodDeclarationSyntax)context.Node).Modifiers.Any(SyntaxKind.PublicKeyword)) return;
 			var singleLineComments = from comment in context.Node.DescendantTrivia() where comment.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) select comment;
 			if (singleLineComments.Count() == 0)
 			{
-				var diagnostic = Diagnostic.Create(Rule4, 
-															  ((MethodDeclarationSyntax)context.Node).Identifier.GetLocation(), 
-															  ((MethodDeclarationSyntax)context.Node).Identifier.Value.ToString(), 
+				var diagnostic = Diagnostic.Create(Rule4,
+															  ((MethodDeclarationSyntax)context.Node).Identifier.GetLocation(),
+															  ((MethodDeclarationSyntax)context.Node).Identifier.Value.ToString(),
 															  "Method");
 				context.ReportDiagnostic(diagnostic);
 			}
@@ -173,9 +233,9 @@ namespace TwStyleGuide
 			if (!syntobj.Statement.HasLeadingTrivia && !syntobj.Statement.IsMissing) // it's not an EoL-Trivia && there is a statement (you are not typing)
 			{
 				var messageHint = Regex.Replace(((string)syntobj.Statement.GetText().ToString()), @"\s+|\t|\n|\r", " "); // cleanup the Warningmessage
-				if (messageHint.Length > 30) messageHint = messageHint.Substring(0, 30) + "...";	// limit it to 30 chars
-				/// Diagnostic.Create(the rule violated, the Location() - for the squiggles, [0..n] parameters - passed to the ''Rule.MessageFormat'')
-				var diagnostic = Diagnostic.Create(Rule1, syntobj.GetLocation(), messageHint); 
+				if (messageHint.Length > 30) messageHint = messageHint.Substring(0, 30) + "..."; // limit it to 30 chars
+																															/// Diagnostic.Create(the rule violated, the Location() - for the squiggles, [0..n] parameters - passed to the ''Rule.MessageFormat'')
+				var diagnostic = Diagnostic.Create(Rule1, syntobj.GetLocation(), messageHint);
 				context.ReportDiagnostic(diagnostic);
 			}
 		}
@@ -197,14 +257,14 @@ namespace TwStyleGuide
 						foreach (var diag in variable.GetDiagnostics()) if (diag.Id == Rule2.Id) alreadyWrong = true;
 						if (!alreadyWrong) context.ReportDiagnostic(diagnostic);
 					}
-			foreach (var token in syntax.Declaration.DescendantTokens()) if (token.RawKind == 8204 && !syntax.Declaration.Type.IsVar)	//ToDo: rk
-			{
-				var diagnostic = Diagnostic.Create(Rule5, syntax.GetLocation(), syntax.Declaration.Variables[0].Identifier.Value);
+			foreach (var token in syntax.Declaration.DescendantTokens()) if (token.RawKind == 8204 && !syntax.Declaration.Type.IsVar)  //ToDo: rk
+				{
+					var diagnostic = Diagnostic.Create(Rule5, syntax.GetLocation(), syntax.Declaration.Variables[0].Identifier.Value);
 					var alreadyWrong = false;
 					SyntaxNode root = context.Node;
 					foreach (var diag in root.GetDiagnostics()) if (diag.Id == Rule5.Id) alreadyWrong = true;
 					if (!alreadyWrong) context.ReportDiagnostic(diagnostic);
-			}
+				}
 		}
 	}
 }
