@@ -9,6 +9,8 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
+using System;
+using System.Collections.Generic;
 
 namespace TwStyleGuide
 {
@@ -250,6 +252,88 @@ namespace TwStyleGuide
 
 			var newStatement = statement.ReplaceNode(declarationType, varDeclarationType);
 			var newRoot = oldRoot.ReplaceNode(statement, newStatement);
+			var newDocument = document.WithSyntaxRoot(newRoot);
+			return Task.FromResult(newDocument);
+		}
+	}
+
+	[ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(RatherSwitchThanIfCodeFixProvider)), Shared]
+	public class RatherSwitchThanIfCodeFixProvider : CodeFixProvider
+	{
+		/// <summary>
+		/// This array publishes the DiagnosticIds, this CodeFixProvider can Fix. 
+		/// </summary>
+		public sealed override ImmutableArray<string> FixableDiagnosticIds
+		{
+			get { return ImmutableArray.Create("TW0006"); }
+		}
+
+		/// <summary>
+		/// This indicates, that the Fix can be run beside other Fixes (async)
+		/// </summary>
+		/// <returns>I don't care</returns>
+		public sealed override FixAllProvider GetFixAllProvider()
+		{
+			// See https://github.com/dotnet/roslyn/blob/master/docs/analyzers/FixAllProvider.md for more information on Fix All Providers
+			return WellKnownFixAllProviders.BatchFixer;
+		}
+
+		/// <summary>
+		/// This knits the CodeFix to the Function which actually does the Job
+		/// CodeAction.Create() can use createChangedDocument as Well as createChangedSolution(), indication if the whole solution will be changed by the Fix or only the actual Document.
+		/// Use this wisely because the performance will drop
+		/// In case of Solution the Fixwer have to return Task of Solution, otherwise Task of Document
+		/// </summary>
+		/// <param name="context">the context is the Location, reported by the Diagnostic Analyser, to knit the Fix-Function to that</param>
+		/// <returns></returns>
+		public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
+		{
+			var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+			var diagnostic = context.Diagnostics.First();
+			var diagnosticSpan = diagnostic.Location.SourceSpan;
+			IfStatementSyntax statement = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<IfStatementSyntax>().First();
+
+			if (statement != null) context.RegisterCodeFix(CodeAction.Create(title: "Change these Ifs to one switch()-statement.",
+																								  createChangedDocument: c => SwitchIt(context.Document, statement, c),
+																								  equivalenceKey: "Change these Ifs to one switch()-statement."),
+																		  diagnostic);
+		}
+
+		/// <summary>
+		/// This is the actual Fix
+		/// </summary>
+		/// <param name="document">the whole Document (Tree)</param>
+		/// <param name="ifStatement">the problem</param>
+		/// <param name="cancellationToken">used to check for that</param>
+		/// <returns>the Changes in the Syntaxtree</returns>
+		private Task<Document> SwitchIt(Document document, IfStatementSyntax statement, CancellationToken cancellationToken)
+		{
+			SyntaxNode oldRoot;
+			document.TryGetSyntaxRoot(out oldRoot);
+
+			var cases = new SyntaxList<SwitchSectionSyntax>();
+
+			var upperIf = statement;
+
+			while (upperIf.Else?.ChildNodes().Count() > 0 && upperIf.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement))
+			{
+				cases = cases.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(new List<SwitchLabelSyntax> { SyntaxFactory.CaseSwitchLabel(((BinaryExpressionSyntax)upperIf.Condition).Right) }),
+										SyntaxFactory.List(new List<StatementSyntax> { upperIf.Statement, SyntaxFactory.BreakStatement() })));
+
+				upperIf = (IfStatementSyntax)upperIf.Else.ChildNodes().First();
+			}
+			
+			// include the last if-statement
+			cases = cases.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(new List<SwitchLabelSyntax> { SyntaxFactory.CaseSwitchLabel(((BinaryExpressionSyntax)upperIf.Condition).Right) }),
+																	    SyntaxFactory.List(new List<StatementSyntax> { upperIf.Statement, SyntaxFactory.BreakStatement() })));
+			// include a possible last else as the default
+			if (upperIf.Else != null)
+				cases = cases.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(new List<SwitchLabelSyntax> { SyntaxFactory.DefaultSwitchLabel() }),
+										SyntaxFactory.List(new List<StatementSyntax> { upperIf.Else.Statement, SyntaxFactory.BreakStatement() })));
+			
+			SwitchStatementSyntax newSwitch = SyntaxFactory.SwitchStatement(((BinaryExpressionSyntax)statement.Condition).Left,cases);
+						
+			var newRoot = oldRoot.ReplaceNode(statement, newSwitch.WithAdditionalAnnotations(Formatter.Annotation));
 			var newDocument = document.WithSyntaxRoot(newRoot);
 			return Task.FromResult(newDocument);
 		}

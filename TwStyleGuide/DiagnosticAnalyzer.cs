@@ -79,8 +79,12 @@ namespace TwStyleGuide
 		{
 			var upperIf = (IfStatementSyntax)context.Node;
 
+			// check if this is the outermost if for the reduction
+			if (upperIf.Parent.IsKind(SyntaxKind.ElseClause))
+				if (((BinaryExpressionSyntax)((IfStatementSyntax)upperIf.Parent.Parent).Condition).Left.ToString() == ((BinaryExpressionSyntax)upperIf.Condition).Left.ToString()) return;
+			
 			// there is nothing to find, if there is no enclosed if
-			if (!(upperIf.Else.ChildNodes().Count() > 0 && upperIf.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement)))
+			if (!(upperIf.Else?.ChildNodes().Count() > 0 && upperIf.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement)))
 				return;
 
 			// ToDo: one could use ''if (var1 == 1) ... else if (2 == var1)'' 
@@ -88,7 +92,7 @@ namespace TwStyleGuide
 
 			var onlySwitching = true;
 
-			while (upperIf.Else.ChildNodes().Count() > 0 && upperIf.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement))
+			while (upperIf.Else?.ChildNodes().Count() > 0 && upperIf.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement))
 			{
 				var descendingIf = (IfStatementSyntax)upperIf.Else.ChildNodes().First();
 
@@ -108,24 +112,6 @@ namespace TwStyleGuide
 				((IfStatementSyntax)context.Node).GetLocation());
 				context.ReportDiagnostic(diagnostic);
 			}
-
-
-			//if (if1.Else.ChildNodes().Count() > 0)
-			//	if (if1.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement))
-			//	{
-			//		var if2 = (IfStatementSyntax)if1.Else.ChildNodes().First();
-
-			//		var left1 = ((BinaryExpressionSyntax)if1.Condition).Left;
-			//		var left2 =((BinaryExpressionSyntax)if2.Condition).Left;
-
-			//		if (left1.ToString() == left2.ToString())
-			//		{
-
-			//			var diagnostic = Diagnostic.Create(Rule6,
-			//													  ((IfStatementSyntax)context.Node).GetLocation());
-			//			context.ReportDiagnostic(diagnostic);
-			//		}
-			//	}
 		}
 
 		private void AnalyzePublicPropertyComment(SyntaxNodeAnalysisContext context)
