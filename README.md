@@ -1,15 +1,15 @@
 twStyleGuide
 ========
 
-# Introduction
+## Introduction
 
 twStyleGuide is an extension for VisualStudio 14. It throws warnings if the corporate design rules were not met and provides a CodeFix for that warning.
 
-# Installation/ Usage
+## Installation/ Usage
 You find the releases at https://github.com/twdes/twStyleGuide/releases .
-## Visual Studio 2015 (14.0)
+#### Visual Studio 2015 (14.0)
 Just download the TwStyleGuide.vsix and execute it.
-## MSBuild
+#### MSBuild
 You can include the Diagnostic Analyzer in an MSBuild Project by downloading twStyleGuide.dll and including:
 ```xml
 <ItemGroup>
@@ -18,7 +18,7 @@ You can include the Diagnostic Analyzer in an MSBuild Project by downloading twS
 ```
 in your *.csproj.
 
-# Licence
+## Licence
 
 Licensed under the [EUPL, Version 1.1] or - as soon they will be approved by the
 European Commission - subsequent versions of the EUPL(the "Licence"); You may
