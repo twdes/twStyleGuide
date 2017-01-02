@@ -6,7 +6,7 @@ twStyleGuide
 twStyleGuide is an extension for VisualStudio 14. It throws warnings if the corporate design rules were not met and provides a CodeFix for that warning.
 
 ## Installation/ Usage
-You find the releases at https://github.com/twdes/twStyleGuide/releases .
+You find the latest release at https://github.com/twdes/twStyleGuide/releases/latest .
 #### Visual Studio 2015 (14.0)
 Just download the TwStyleGuide.vsix and execute it.
 #### MSBuild
