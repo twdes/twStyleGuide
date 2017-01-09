@@ -67,11 +67,11 @@ namespace TwStyleGuide
 			context.RegisterSyntaxNodeAction(AnalyzeIndentationOfSyntaxNode, SyntaxKind.IfStatement, SyntaxKind.ForStatement, SyntaxKind.WhileStatement, SyntaxKind.ForEachStatement);
 			context.RegisterSyntaxNodeAction(AnalyzeVariableDeclarationSyntaxNode, SyntaxKind.LocalDeclarationStatement);
 			context.RegisterSyntaxTreeAction(AnalyzeSingleLineCommentSyntaxNode);   // SyntaxKind.SingleLineComment does not work/is not fired
-			context.RegisterSyntaxNodeAction(AnalyzePublicMethodComment, SyntaxKind.MethodDeclaration);
-			context.RegisterSyntaxNodeAction(AnalyzePublicVarComment, SyntaxKind.FieldDeclaration);
-			context.RegisterSyntaxNodeAction(AnalyzePublicEnumComment, SyntaxKind.EnumDeclaration);
-			context.RegisterSyntaxNodeAction(AnalyzePublicStructComment, SyntaxKind.StructDeclaration);
-			context.RegisterSyntaxNodeAction(AnalyzePublicPropertyComment, SyntaxKind.PropertyDeclaration);
+			//context.RegisterSyntaxNodeAction(AnalyzePublicMethodComment, SyntaxKind.MethodDeclaration);	//disables - already a VS feature
+			//context.RegisterSyntaxNodeAction(AnalyzePublicVarComment, SyntaxKind.FieldDeclaration);
+			//context.RegisterSyntaxNodeAction(AnalyzePublicEnumComment, SyntaxKind.EnumDeclaration);
+			//context.RegisterSyntaxNodeAction(AnalyzePublicStructComment, SyntaxKind.StructDeclaration);
+			//context.RegisterSyntaxNodeAction(AnalyzePublicPropertyComment, SyntaxKind.PropertyDeclaration);
 			context.RegisterSyntaxNodeAction(AnalyzeEncapsulatingIfs, SyntaxKind.IfStatement);
 		}
 
@@ -82,8 +82,10 @@ namespace TwStyleGuide
 			// check if this is the outermost if for the reduction
 			if (upperIf.Parent.IsKind(SyntaxKind.ElseClause))
 			{
-				if (upperIf.Condition.GetType() != typeof(BinaryExpressionSyntax)) return;
-				if (((BinaryExpressionSyntax)((IfStatementSyntax)upperIf.Parent.Parent).Condition).Left.ToString() == ((BinaryExpressionSyntax)upperIf.Condition).Left.ToString()) return;
+				if (upperIf.Condition.GetType() != typeof(BinaryExpressionSyntax))
+					return;
+				if (((BinaryExpressionSyntax)((IfStatementSyntax)upperIf.Parent.Parent).Condition).Left.ToString() == ((BinaryExpressionSyntax)upperIf.Condition).Left.ToString())
+					return;
 			}
 				
 			
@@ -105,7 +107,8 @@ namespace TwStyleGuide
 				{
 					var descendingLeft = ((BinaryExpressionSyntax)descendingIf.Condition).Left;
 
-					if (upperLeft.ToString() != descendingLeft.ToString()) onlySwitching = false;
+					if (upperLeft.ToString() != descendingLeft.ToString())
+						onlySwitching = false;
 				}
 				upperIf = descendingIf;
 			}
@@ -121,7 +124,8 @@ namespace TwStyleGuide
 		private void AnalyzePublicPropertyComment(SyntaxNodeAnalysisContext context)
 		{
 
-			if (!((PropertyDeclarationSyntax)context.Node).Modifiers.Any(SyntaxKind.PublicKeyword)) return;
+			if (!((PropertyDeclarationSyntax)context.Node).Modifiers.Any(SyntaxKind.PublicKeyword))
+				return;
 			var singleLineComments = from comment in context.Node.DescendantTrivia() where comment.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) select comment;
 
 			if (singleLineComments.Count() == 0)
@@ -137,7 +141,8 @@ namespace TwStyleGuide
 		private void AnalyzePublicStructComment(SyntaxNodeAnalysisContext context)
 		{
 
-			if (!((StructDeclarationSyntax)context.Node).Modifiers.Any(SyntaxKind.PublicKeyword)) return;
+			if (!((StructDeclarationSyntax)context.Node).Modifiers.Any(SyntaxKind.PublicKeyword))
+				return;
 			var singleLineComments = from comment in context.Node.DescendantTrivia() where comment.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) select comment;
 			if (singleLineComments.Count() == 0)
 			{
@@ -153,7 +158,8 @@ namespace TwStyleGuide
 		private void AnalyzePublicEnumComment(SyntaxNodeAnalysisContext context)
 		{
 
-			if (!((EnumDeclarationSyntax)context.Node).Modifiers.Any(SyntaxKind.PublicKeyword)) return;
+			if (!((EnumDeclarationSyntax)context.Node).Modifiers.Any(SyntaxKind.PublicKeyword))
+				return;
 			var singleLineComments = from comment in context.Node.DescendantTrivia() where comment.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) select comment;
 			if (singleLineComments.Count() == 0)
 			{
@@ -168,8 +174,8 @@ namespace TwStyleGuide
 
 		private void AnalyzePublicVarComment(SyntaxNodeAnalysisContext context)
 		{
-
-			if (!((FieldDeclarationSyntax)context.Node).Modifiers.Any(SyntaxKind.PublicKeyword)) return;
+			if (!((FieldDeclarationSyntax)context.Node).Modifiers.Any(SyntaxKind.PublicKeyword))
+				return;
 			var singleLineComments = from comment in context.Node.DescendantTrivia() where comment.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) select comment;
 			if (singleLineComments.Count() == 0)
 				foreach (var variable in ((FieldDeclarationSyntax)context.Node).Declaration.Variables)
@@ -185,8 +191,8 @@ namespace TwStyleGuide
 
 		private void AnalyzePublicMethodComment(SyntaxNodeAnalysisContext context)
 		{
-
-			if (!((MethodDeclarationSyntax)context.Node).Modifiers.Any(SyntaxKind.PublicKeyword)) return;
+			if (!((MethodDeclarationSyntax)context.Node).Modifiers.Any(SyntaxKind.PublicKeyword))
+				return;
 			var singleLineComments = from comment in context.Node.DescendantTrivia() where comment.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) select comment;
 			if (singleLineComments.Count() == 0)
 			{
@@ -200,7 +206,7 @@ namespace TwStyleGuide
 
 		private void AnalyzeSingleLineCommentSyntaxNode(SyntaxTreeAnalysisContext context)
 		{
-			SyntaxNode root = context.Tree.GetCompilationUnitRoot(context.CancellationToken);
+			var root = context.Tree.GetCompilationUnitRoot(context.CancellationToken);
 			var commentNodes = from node in root.DescendantTrivia() where node.IsKind(SyntaxKind.SingleLineCommentTrivia) select node;  //  one could also select ''node.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia)''
 			foreach (var node in commentNodes)
 				if (Regex.IsMatch(node.ToString(), @"/{2,}\w+"))
@@ -223,8 +229,9 @@ namespace TwStyleGuide
 			if (!syntobj.Statement.HasLeadingTrivia && !syntobj.Statement.IsMissing) // it's not an EoL-Trivia && there is a statement (you are not typing)
 			{
 				var messageHint = Regex.Replace(((string)syntobj.Statement.GetText().ToString()), @"\s+|\t|\n|\r", " "); // cleanup the Warningmessage
-				if (messageHint.Length > 30) messageHint = messageHint.Substring(0, 30) + "..."; // limit it to 30 chars
-																															/// Diagnostic.Create(the rule violated, the Location() - for the squiggles, [0..n] parameters - passed to the ''Rule.MessageFormat'')
+				if (messageHint.Length > 30)
+					messageHint = messageHint.Substring(0, 30) + "..."; // limit it to 30 chars
+																						 /// Diagnostic.Create(the rule violated, the Location() - for the squiggles, [0..n] parameters - passed to the ''Rule.MessageFormat'')
 				var diagnostic = Diagnostic.Create(Rule1, syntobj.GetLocation(), messageHint);
 				context.ReportDiagnostic(diagnostic);
 			}
@@ -244,16 +251,23 @@ namespace TwStyleGuide
 					{
 						var diagnostic = Diagnostic.Create(Rule2, variable.GetLocation(), variable.Identifier.Text, variable.Initializer.Value.ToString());
 						var alreadyWrong = false;
-						foreach (var diag in variable.GetDiagnostics()) if (diag.Id == Rule2.Id) alreadyWrong = true;
-						if (!alreadyWrong) context.ReportDiagnostic(diagnostic);
+						foreach (var diag in variable.GetDiagnostics())
+							if (diag.Id == Rule2.Id)
+								alreadyWrong = true;
+						if (!alreadyWrong)
+							context.ReportDiagnostic(diagnostic);
 					}
-			foreach (var token in syntax.Declaration.DescendantTokens()) if (token.RawKind == 8204 && !syntax.Declaration.Type.IsVar)  //ToDo: rk
+			foreach (var token in syntax.Declaration.DescendantTokens())
+				if (token.RawKind == 8204 && !syntax.Declaration.Type.IsVar && !(syntax.Declaration.Type.ToString().Contains("dynamic")) && !(syntax.Declaration.Type.ToString().Contains("const")) && !(syntax.Declaration.Type.ToString().Contains("object")))  // ToDo: rk
 				{
 					var diagnostic = Diagnostic.Create(Rule5, syntax.GetLocation(), syntax.Declaration.Variables[0].Identifier.Value);
 					var alreadyWrong = false;
-					SyntaxNode root = context.Node;
-					foreach (var diag in root.GetDiagnostics()) if (diag.Id == Rule5.Id) alreadyWrong = true;
-					if (!alreadyWrong) context.ReportDiagnostic(diagnostic);
+					var root = context.Node;
+					foreach (var diag in root.GetDiagnostics())
+						if (diag.Id == Rule5.Id)
+							alreadyWrong = true;
+					if (!alreadyWrong)
+						context.ReportDiagnostic(diagnostic);
 				}
 		}
 	}
