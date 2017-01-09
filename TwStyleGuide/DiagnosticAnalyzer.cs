@@ -263,7 +263,7 @@ namespace TwStyleGuide
 							context.ReportDiagnostic(diagnostic);
 					}
 			foreach (var token in syntax.Declaration.DescendantTokens())
-				if (token.RawKind == 8204 && !syntax.Declaration.Type.IsVar && !(syntax.Declaration.Type.ToString().Contains("dynamic")) && !(syntax.Declaration.Type.ToString().Contains("const")) && !(syntax.Declaration.Type.ToString().Contains("object")))  // ToDo: rk
+				if (token.RawKind == 8204 && !syntax.Declaration.Variables.First().Initializer.ToString().EndsWith("null") && !syntax.Declaration.Type.IsVar && !(syntax.Declaration.Type.ToString().Contains("dynamic")) && !(syntax.Declaration.Type.ToString().Contains("const")) && !(syntax.Declaration.Type.ToString().Contains("object")))  // ToDo: rk
 				{
 					var diagnostic = Diagnostic.Create(Rule5, syntax.GetLocation(), syntax.Declaration.Variables[0].Identifier.Value);
 					var alreadyWrong = false;
