@@ -106,9 +106,12 @@ namespace TwStyleGuide
 				if (descendingIf.Condition.IsKind(SyntaxKind.EqualsExpression))
 				{
 					var descendingLeft = ((BinaryExpressionSyntax)descendingIf.Condition).Left;
+					var descendingRight = ((BinaryExpressionSyntax)descendingIf.Condition).Right;
 
 					if (upperLeft.ToString() != descendingLeft.ToString())
 						onlySwitching = false;
+					//if (descendingRight.ToString().Contains("typeof"))
+						//onlySwitching = false;
 				}
 				else
 					onlySwitching = false;
