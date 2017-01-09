@@ -110,6 +110,8 @@ namespace TwStyleGuide
 					if (upperLeft.ToString() != descendingLeft.ToString())
 						onlySwitching = false;
 				}
+				else
+					onlySwitching = false;
 				upperIf = descendingIf;
 			}
 
