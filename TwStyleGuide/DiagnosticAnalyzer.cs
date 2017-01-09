@@ -110,8 +110,8 @@ namespace TwStyleGuide
 
 					if (upperLeft.ToString() != descendingLeft.ToString())
 						onlySwitching = false;
-					//if (descendingRight.ToString().Contains("typeof"))
-						//onlySwitching = false;
+					if (descendingRight.ToString().Contains("typeof"))
+						onlySwitching = false;
 				}
 				else
 					onlySwitching = false;
@@ -214,7 +214,7 @@ namespace TwStyleGuide
 			var root = context.Tree.GetCompilationUnitRoot(context.CancellationToken);
 			var commentNodes = from node in root.DescendantTrivia() where node.IsKind(SyntaxKind.SingleLineCommentTrivia) select node;  //  one could also select ''node.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia)''
 			foreach (var node in commentNodes)
-				if (Regex.IsMatch(node.ToString(), @"/{2,}\w+"))
+				if (Regex.IsMatch(node.ToString(), @"^/{2,}\w+"))
 				{
 					var diagnostic = Diagnostic.Create(Rule3, node.GetLocation());
 					context.ReportDiagnostic(diagnostic);
