@@ -79,10 +79,14 @@ namespace TwStyleGuide
 		{
 			var upperIf = (IfStatementSyntax)context.Node;
 
+			if (upperIf.Condition.GetType() != typeof(BinaryExpressionSyntax))
+				return;
+
 			// check if this is the outermost if for the reduction
 			if (upperIf.Parent.IsKind(SyntaxKind.ElseClause))
 			{
-				if (upperIf.Condition.GetType() != typeof(BinaryExpressionSyntax))
+				
+				if (upperIf.Parent.Parent.GetType() != typeof(BinaryExpressionSyntax))
 					return;
 				if (((BinaryExpressionSyntax)((IfStatementSyntax)upperIf.Parent.Parent).Condition).Left.ToString() == ((BinaryExpressionSyntax)upperIf.Condition).Left.ToString())
 					return;
@@ -101,6 +105,9 @@ namespace TwStyleGuide
 			while (upperIf.Else?.ChildNodes().Count() > 0 && upperIf.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement))
 			{
 				var descendingIf = (IfStatementSyntax)upperIf.Else.ChildNodes().First();
+
+				if (descendingIf.Condition.GetType() != typeof(BinaryExpressionSyntax))
+					return;
 
 				upperLeft = ((BinaryExpressionSyntax)upperIf.Condition).Left;
 				if (descendingIf.Condition.IsKind(SyntaxKind.EqualsExpression))

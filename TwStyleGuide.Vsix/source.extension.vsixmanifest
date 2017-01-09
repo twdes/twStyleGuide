@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="TwStyleGuide..a77f979c-2636-4ac7-97ff-727faad7c1b5" Version="1.7" Language="en-US" Publisher="krug"/>
+    <Identity Id="TwStyleGuide..a77f979c-2636-4ac7-97ff-727faad7c1b5" Version="1.7.1" Language="en-US" Publisher="krug"/>
     <DisplayName>TwStyleGuide</DisplayName>
     <Description xml:space="preserve">This is a Diagnostic Analyzer which enforces the Corporate Design Rules in Sourcecodes of TecWare</Description>
     <MoreInfo>https://github.com/twdes/twStyleGuide</MoreInfo>
