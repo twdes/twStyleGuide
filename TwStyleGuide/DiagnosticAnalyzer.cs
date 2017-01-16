@@ -85,7 +85,6 @@ namespace TwStyleGuide
 			// check if this is the outermost if for the reduction
 			if (upperIf.Parent.IsKind(SyntaxKind.ElseClause))
 			{
-				
 				if (upperIf.Parent.Parent.GetType() != typeof(BinaryExpressionSyntax))
 					return;
 				if (((BinaryExpressionSyntax)((IfStatementSyntax)upperIf.Parent.Parent).Condition).Left.ToString() == ((BinaryExpressionSyntax)upperIf.Condition).Left.ToString())
@@ -110,6 +109,10 @@ namespace TwStyleGuide
 					return;
 
 				upperLeft = ((BinaryExpressionSyntax)upperIf.Condition).Left;
+
+				if (!(new[] { "Boolean", "Char", "String", "Integral", "Enum" }.Contains(context.SemanticModel.GetTypeInfo((MemberAccessExpressionSyntax)upperLeft).ConvertedType.Name)))
+					return;
+
 				if (descendingIf.Condition.IsKind(SyntaxKind.EqualsExpression))
 				{
 					var descendingLeft = ((BinaryExpressionSyntax)descendingIf.Condition).Left;
