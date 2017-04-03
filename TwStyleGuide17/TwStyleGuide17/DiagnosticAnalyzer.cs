@@ -8,9 +8,8 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Text.RegularExpressions;
-using Microsoft.CodeAnalysis.Formatting;
 
-namespace TwStyleGuide
+namespace TwStyleGuide17
 {
 	[DiagnosticAnalyzer(LanguageNames.CSharp)]
 	public class TwStyleGuideAnalyzer : DiagnosticAnalyzer
@@ -67,11 +66,11 @@ namespace TwStyleGuide
 			context.RegisterSyntaxNodeAction(AnalyzeIndentationOfSyntaxNode, SyntaxKind.IfStatement, SyntaxKind.ForStatement, SyntaxKind.WhileStatement, SyntaxKind.ForEachStatement);
 			context.RegisterSyntaxNodeAction(AnalyzeVariableDeclarationSyntaxNode, SyntaxKind.LocalDeclarationStatement);
 			context.RegisterSyntaxTreeAction(AnalyzeSingleLineCommentSyntaxNode);   // SyntaxKind.SingleLineComment does not work/is not fired
-			//context.RegisterSyntaxNodeAction(AnalyzePublicMethodComment, SyntaxKind.MethodDeclaration);	//disables - already a VS feature
-			//context.RegisterSyntaxNodeAction(AnalyzePublicVarComment, SyntaxKind.FieldDeclaration);
-			//context.RegisterSyntaxNodeAction(AnalyzePublicEnumComment, SyntaxKind.EnumDeclaration);
-			//context.RegisterSyntaxNodeAction(AnalyzePublicStructComment, SyntaxKind.StructDeclaration);
-			//context.RegisterSyntaxNodeAction(AnalyzePublicPropertyComment, SyntaxKind.PropertyDeclaration);
+																											//context.RegisterSyntaxNodeAction(AnalyzePublicMethodComment, SyntaxKind.MethodDeclaration);	//disables - already a VS feature
+																											//context.RegisterSyntaxNodeAction(AnalyzePublicVarComment, SyntaxKind.FieldDeclaration);
+																											//context.RegisterSyntaxNodeAction(AnalyzePublicEnumComment, SyntaxKind.EnumDeclaration);
+																											//context.RegisterSyntaxNodeAction(AnalyzePublicStructComment, SyntaxKind.StructDeclaration);
+																											//context.RegisterSyntaxNodeAction(AnalyzePublicPropertyComment, SyntaxKind.PropertyDeclaration);
 			context.RegisterSyntaxNodeAction(AnalyzeEncapsulatingIfs, SyntaxKind.IfStatement);
 		}
 
@@ -90,8 +89,8 @@ namespace TwStyleGuide
 				if (((BinaryExpressionSyntax)((IfStatementSyntax)upperIf.Parent.Parent).Condition).Left.ToString() == ((BinaryExpressionSyntax)upperIf.Condition).Left.ToString())
 					return;
 			}
-				
-			
+
+
 			// there is nothing to find, if there is no enclosed if
 			if (!(upperIf.Else?.ChildNodes().Count() > 0 && upperIf.Else.ChildNodes().First().IsKind(SyntaxKind.IfStatement)))
 				return;
@@ -109,7 +108,8 @@ namespace TwStyleGuide
 					return;
 
 				upperLeft = ((BinaryExpressionSyntax)upperIf.Condition).Left;
-
+				if (!(upperLeft is MemberAccessExpressionSyntax))
+					return;
 				if (!(new[] { "Boolean", "Char", "String", "Integral", "Enum" }.Contains(context.SemanticModel.GetTypeInfo((MemberAccessExpressionSyntax)upperLeft).ConvertedType.Name)))
 					return;
 
